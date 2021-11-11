@@ -20,10 +20,10 @@ interface Resolver {
 }
 
 /**
- * @title Moooon: Combine to-the-moon and the moo sound from bulls (cow actually LUL)
+ * @title Bulls (dynamic NFTs) that grow with rising price
  * @author Justa Liang
  */
-contract Moooon is ERC721Enumerable {
+contract BullsToTheMoon is ERC721Enumerable {
 
     /// @notice Counter of tokenId
     uint public counter;
@@ -31,16 +31,16 @@ contract Moooon is ERC721Enumerable {
     /// @notice ENS interface (fixed address)
     ENS public ens;
 
-    /// @dev Moooon's state
-    struct MoooonState {
+    /// @dev Bull's state
+    struct Bull {
         address     proxy;        // which proxy of Chainlink price feed
         bool        closed;       // position closed
         int         latestPrice;  // latest updated price from Chainlink
         int         roi;          // return on investment
     }
 
-    /// @dev Moooon's profile for viewing
-    struct MoooonProfile {
+    /// @dev Bull's profile for viewing
+    struct BullProfile {
         address     proxy;
         bool        closed;
         int         latestPrice;
@@ -48,11 +48,11 @@ contract Moooon is ERC721Enumerable {
         string      uri;
     }
 
-    /// @dev Moooon's state stored on-chain
-    mapping(uint => MoooonState) public moooonStateOf;
+    /// @dev Bull's state stored on-chain
+    mapping(uint => Bull) public bullStateOf;
 
-    /// @notice Emit when a Moooon's state changes 
-    event CurrentMoooonState(
+    /// @notice Emit when a bull's state changes 
+    event BullState(
         uint indexed tokenId,
         address indexed proxy,
         bool indexed closed,
@@ -64,7 +64,7 @@ contract Moooon is ERC721Enumerable {
      * @dev Set name, symbol, and addresses of interactive contracts
      */
     constructor(address ensRegistryAddr)
-        ERC721("Moooon", "MOO")
+        ERC721("BullsToTheMoon", "B2M")
     {
         counter = 0;
         ens = ENS(ensRegistryAddr);
@@ -75,64 +75,64 @@ contract Moooon is ERC721Enumerable {
      */
     modifier checkOwner(uint tokenId) {
         require(
-            _isApprovedOrOwner(msg.sender, tokenId),
+            _isApprovedOrOwner(_msgSender(), tokenId),
             "wrong owner"
         );
         _;
     }
 
     /**
-     * @notice Open a long position and update latest price of certain moooon
-     * @param tokenId ID of the moooon
+     * @notice Open a long position and update latest price of certain bull
+     * @param tokenId ID of the bull
      */
     function open(uint tokenId) external checkOwner(tokenId) {
-        MoooonState storage targetState = moooonStateOf[tokenId];
+        Bull storage target = bullStateOf[tokenId];
         require(
-            targetState.closed,
-            "moooon already opened"
+            target.closed,
+            "bull already opened"
         );
 
         // get current price
-        AggregatorV3Interface pricefeed = AggregatorV3Interface(targetState.proxy);
+        AggregatorV3Interface pricefeed = AggregatorV3Interface(target.proxy);
         (,int currPrice,,,) = pricefeed.latestRoundData();
 
         // update on-chain data
-        targetState.latestPrice = currPrice;
-        targetState.closed = false;
+        target.latestPrice = currPrice;
+        target.closed = false;
 
-        // emit moooon state
-        emit CurrentMoooonState(tokenId, targetState.proxy, false, currPrice, targetState.roi);
+        // emit bull state
+        emit BullState(tokenId, target.proxy, false, currPrice, target.roi);
     }
 
     /**
-     * @notice Close the position and compute ROI of certain moooon
-     * @param tokenId ID of the moooon
+     * @notice Close the position and compute ROI of certain bull
+     * @param tokenId ID of the bull
      */
     function close(uint tokenId) external checkOwner(tokenId) {
-        MoooonState storage targetState = moooonStateOf[tokenId];
+        Bull storage target = bullStateOf[tokenId];
         require(
-            !targetState.closed,
-            "moooon already closed"
+            !target.closed,
+            "bull already closed"
         );
 
         // get current price
-        AggregatorV3Interface pricefeed = AggregatorV3Interface(targetState.proxy);
+        AggregatorV3Interface pricefeed = AggregatorV3Interface(target.proxy);
         (,int currPrice,,,) = pricefeed.latestRoundData();
 
         // update on-chain data
-        targetState.roi = currPrice*(10000+targetState.roi)/targetState.latestPrice-10000;
-        targetState.closed = true;
+        target.roi = currPrice*(10000+target.roi)/target.latestPrice-10000;
+        target.closed = true;
 
-        // emit Moooon state
-        emit CurrentMoooonState(tokenId, targetState.proxy, true, currPrice, targetState.roi);
+        // emit bull state
+        emit BullState(tokenId, target.proxy, true, currPrice, target.roi);
     }
 
     /**
-     * @notice Create a moooon
+     * @notice Breed a bull
      * @param namehash ENS-namehash of given pair (ex: eth-usd.data.eth)
-     * @return ID of the new moooon
+     * @return ID of the new bull
      */
-    function create(bytes32 namehash) external returns (uint) {
+    function breed(bytes32 namehash) external returns (uint) {
         address proxyAddr = _resolve(namehash);
         require(
             proxyAddr != address(0),
@@ -142,19 +142,19 @@ contract Moooon is ERC721Enumerable {
         AggregatorV3Interface pricefeed = AggregatorV3Interface(proxyAddr);
         (,int currPrice,,,) = pricefeed.latestRoundData();
 
-        // mint moooon and store its state on chain
+        // mint bull and store its state on chain
         uint newId = counter;
-        _safeMint(msg.sender, newId);
-        moooonStateOf[newId] = MoooonState(proxyAddr, false, currPrice, 0);
+        _safeMint(_msgSender(), newId);
+        bullStateOf[newId] = Bull(proxyAddr, false, currPrice, 0);
 
-        emit CurrentMoooonState(newId, proxyAddr, false, currPrice, 0);
+        emit BullState(newId, proxyAddr, false, currPrice, 0);
         counter++;
         return newId;
     }
     
     /**
      * @dev Resolve ENS-namehash to Chainlink price feed proxy
-    */
+     */
     function _resolve(bytes32 node) internal view returns (address) {
         Resolver resolver = ens.resolver(node);
         return resolver.addr(node);

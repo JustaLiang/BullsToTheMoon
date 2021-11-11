@@ -1,9 +1,9 @@
 {
-  "name": "to-the-moooon",
+  "name": "bulls-and-bears",
   "version": "1.0.0",
   "description": "NFT project that is dynamic over market price and also assemblable",
   "main": "index.js",
-  "repository": "https://github.com/JustaJunk/To-The-Moooon.git",
+  "repository": "https://github.com/JustaJunk/Bulls-and-Bears.git",
   "author": "Justa Liang",
   "license": "MIT",
   "devDependencies": {
