@@ -49,11 +49,11 @@ contract Moooon is ERC721Enumerable {
     }
 
     /// @dev Moooon's state stored on-chain
-    mapping(uint => MoooonState) public moooonState;
+    mapping(uint => MoooonState) public moooonStateOf;
 
     /// @notice Emit when a Moooon's state changes 
     event CurrentMoooonState(
-        uint indexed moooonId,
+        uint indexed tokenId,
         address indexed proxy,
         bool indexed closed,
         int latestPrice,
@@ -62,7 +62,7 @@ contract Moooon is ERC721Enumerable {
 
     /**
      * @dev Set name, symbol, and addresses of interactive contracts
-    */
+     */
     constructor(address ensRegistryAddr)
         ERC721("Moooon", "MOO")
     {
@@ -71,15 +71,72 @@ contract Moooon is ERC721Enumerable {
     }
 
     /**
-     * @notice Breed a moooon
+     * @dev Check the owner
+     */
+    modifier checkOwner(uint tokenId) {
+        require(
+            _isApprovedOrOwner(msg.sender, tokenId),
+            "wrong owner"
+        );
+        _;
+    }
+
+    /**
+     * @notice Open a long position and update latest price of certain moooon
+     * @param tokenId ID of the moooon
+     */
+    function open(uint tokenId) external checkOwner(tokenId) {
+        MoooonState storage targetState = moooonStateOf[tokenId];
+        require(
+            targetState.closed,
+            "moooon already opened"
+        );
+
+        // get current price
+        AggregatorV3Interface pricefeed = AggregatorV3Interface(targetState.proxy);
+        (,int currPrice,,,) = pricefeed.latestRoundData();
+
+        // update on-chain data
+        targetState.latestPrice = currPrice;
+        targetState.closed = false;
+
+        // emit moooon state
+        emit CurrentMoooonState(tokenId, targetState.proxy, false, currPrice, targetState.roi);
+    }
+
+    /**
+     * @notice Close the position and compute ROI of certain moooon
+     * @param tokenId ID of the moooon
+     */
+    function close(uint tokenId) external checkOwner(tokenId) {
+        MoooonState storage targetState = moooonStateOf[tokenId];
+        require(
+            !targetState.closed,
+            "moooon already closed"
+        );
+
+        // get current price
+        AggregatorV3Interface pricefeed = AggregatorV3Interface(targetState.proxy);
+        (,int currPrice,,,) = pricefeed.latestRoundData();
+
+        // update on-chain data
+        targetState.roi = currPrice*(10000+targetState.roi)/targetState.latestPrice-10000;
+        targetState.closed = true;
+
+        // emit Moooon state
+        emit CurrentMoooonState(tokenId, targetState.proxy, true, currPrice, targetState.roi);
+    }
+
+    /**
+     * @notice Create a moooon
      * @param namehash ENS-namehash of given pair (ex: eth-usd.data.eth)
      * @return ID of the new moooon
-    */
-    function breed(bytes32 namehash) external returns (uint) {
+     */
+    function create(bytes32 namehash) external returns (uint) {
         address proxyAddr = _resolve(namehash);
         require(
             proxyAddr != address(0),
-            "breed: invalid proxy"
+            "invalid proxy"
         );
         // get current price
         AggregatorV3Interface pricefeed = AggregatorV3Interface(proxyAddr);
@@ -88,24 +145,13 @@ contract Moooon is ERC721Enumerable {
         // mint moooon and store its state on chain
         uint newId = counter;
         _safeMint(msg.sender, newId);
-        moooonState[newId] = MoooonState(proxyAddr, false, currPrice, 0);
+        moooonStateOf[newId] = MoooonState(proxyAddr, false, currPrice, 0);
 
         emit CurrentMoooonState(newId, proxyAddr, false, currPrice, 0);
         counter++;
         return newId;
     }
-
-    /**
-     * @dev Check the owner
-    */
-    modifier checkOwner(uint moooonId) {
-        require(
-            _isApprovedOrOwner(msg.sender, moooonId),
-            "wrong owner"
-        );
-        _;
-    }
-
+    
     /**
      * @dev Resolve ENS-namehash to Chainlink price feed proxy
     */
