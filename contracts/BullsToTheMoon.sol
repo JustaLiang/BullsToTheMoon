@@ -1,9 +1,10 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.6;
 
 import "hardhat/console.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "./BTTMInterface.sol";
 
 /**
  * @notice ENS registry to get chainlink resolver
@@ -23,7 +24,7 @@ interface Resolver {
  * @title Bulls (dynamic NFTs) that grow with rising price
  * @author Justa Liang
  */
-contract BullsToTheMoon is ERC721Enumerable {
+contract BullsToTheMoon is ERC721Enumerable, BTTMInterface {
 
     /// @notice Counter of tokenId
     uint public counter;

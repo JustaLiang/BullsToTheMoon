@@ -1,9 +1,9 @@
 {
-  "name": "bulls-and-bears",
+  "name": "bulls-to-the-moon",
   "version": "1.0.0",
-  "description": "NFT project that is dynamic over market price and also assemblable",
+  "description": "GameFi project with market-determined NFTs and territory fighting.",
   "main": "index.js",
-  "repository": "https://github.com/JustaJunk/Bulls-and-Bears.git",
+  "repository": "https://github.com/JustaJunk/BullsToTheMoon.git",
   "author": "Justa Liang",
   "license": "MIT",
   "devDependencies": {
