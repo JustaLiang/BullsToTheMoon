@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
@@ -49,9 +49,9 @@ interface BullsToTheMoonInterface {
 
     /**
      * @notice Propose the next-generation skin
-     * @param newBaseURI Base URI of proposer's designed NFTs
+     * @param proposedBaseURI Base URI of proposer's designed NFTs
      */
-    function propose(string memory newBaseURI) external;
+    function propose(string memory proposedBaseURI) external;
 
     /**
      * @notice Start the vote
@@ -59,14 +59,14 @@ interface BullsToTheMoonInterface {
     function startVote() external;
 
     /**
-     * @notice End the vote
-     */
-    function endVote() external;
-
-    /**
      * @notice Vote the proposals using owned field
      * @param proposalId ID of the proposal
      * @param fieldCount Number of owned field
      */
     function vote(uint proposalId, uint fieldCount) external;
+
+    /**
+     * @notice End the vote
+     */
+    function endVote() external;
 }
